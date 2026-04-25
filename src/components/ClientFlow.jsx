@@ -153,4 +153,177 @@ function StepService({ services, booking, onSelect }) {
             </div>
           </button>
         ))}
-      </div
+      </div>
+    </div>
+  );
+}
+
+function StepBarber({ barbers, booking, onSelect }) {
+  return (
+    <div>
+      <SectionTitle title="Escolha o Barbeiro" subtitle="Quem vai te atender?" />
+      <div className="px-4 flex flex-col gap-3">
+        {barbers.length === 0 && <p className="text-stone-500 text-center py-8">Nenhum barbeiro cadastrado</p>}
+        {barbers.map(b => (
+          <button key={b.id} onClick={() => onSelect(b)} className={`w-full text-left rounded-2xl p-4 border-2 transition-all bg-stone-900 ${booking.barber?.id === b.id ? "border-amber-400" : "border-stone-800"}`}>
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-full overflow-hidden bg-stone-800 flex-shrink-0">
+                {b.photo_url ? <img src={b.photo_url} alt={b.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><User size={28} className="text-stone-500" /></div>}
+              </div>
+              <div className="flex-1">
+                <h3 className="text-white font-bold text-lg">{b.name}</h3>
+                {b.specialty && <p className="text-stone-400 text-sm">{b.specialty}</p>}
+                {b.rating && <div className="flex items-center gap-1 mt-1"><Star size={12} className="text-amber-400 fill-amber-400" /><span className="text-amber-400 text-sm font-bold">{b.rating}</span></div>}
+              </div>
+              <ChevronRight size={20} className="text-stone-500" />
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StepTime({ booking, appointments, onSelect }) {
+  const [selectedDate, setSelectedDate] = useState("");
+  const [availableTimes, setAvailableTimes] = useState([]);
+  const allTimes = ["08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00","18:30","19:00"];
+  const next14Days = Array.from({length: 14}, (_, i) => { const d = new Date(); d.setDate(d.getDate() + i); if (d.getDay() === 0) return null; return d.toISOString().split("T")[0]; }).filter(Boolean);
+
+  function selectDate(date) {
+    setSelectedDate(date);
+    const booked = appointments.filter(a => a.date === date && a.barber_id === booking.barber?.id).map(a => a.time);
+    setAvailableTimes(allTimes.filter(t => !booked.includes(t)));
+  }
+
+  function formatDayLabel(dateStr) {
+    const d = new Date(dateStr + "T00:00:00");
+    const days = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+    const months = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+    return { day: days[d.getDay()], date: d.getDate(), month: months[d.getMonth()] };
+  }
+
+  return (
+    <div>
+      <SectionTitle title="Escolha o Horário" subtitle={`Barbeiro: ${booking.barber?.name}`} />
+      <div className="px-4 mb-4">
+        <p className="text-stone-400 text-xs uppercase tracking-widest mb-3">Data</p>
+        <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
+          {next14Days.map(d => {
+            const lbl = formatDayLabel(d);
+            return (
+              <button key={d} onClick={() => selectDate(d)} className={`flex-shrink-0 flex flex-col items-center p-3 rounded-2xl min-w-[60px] border-2 transition-all ${selectedDate === d ? "bg-amber-400 border-amber-400 text-stone-950" : "bg-stone-900 border-stone-800 text-white"}`}>
+                <span className={`text-[10px] font-bold uppercase ${selectedDate === d ? "text-stone-800" : "text-stone-400"}`}>{lbl.day}</span>
+                <span className="text-xl font-black mt-1">{lbl.date}</span>
+                <span className={`text-[10px] ${selectedDate === d ? "text-stone-800" : "text-stone-500"}`}>{lbl.month}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      {selectedDate && (
+        <div className="px-4">
+          <p className="text-stone-400 text-xs uppercase tracking-widest mb-3">Horários disponíveis</p>
+          {availableTimes.length === 0 ? <p className="text-stone-500 text-center py-8">Sem horários disponíveis</p> : (
+            <div className="grid grid-cols-3 gap-2">
+              {availableTimes.map(t => (
+                <button key={t} onClick={() => onSelect(selectedDate, t)} className="bg-stone-900 border-2 border-stone-800 hover:border-amber-400 text-white font-bold py-3 rounded-xl text-sm transition-all active:bg-amber-400 active:text-stone-950">{t}</button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {!selectedDate && <div className="px-4 text-center py-8"><Calendar size={40} className="text-stone-700 mx-auto mb-3" /><p className="text-stone-500">Selecione uma data acima</p></div>}
+    </div>
+  );
+}
+
+function StepInfo({ booking, onChange, onNext }) {
+  const [name, setName] = useState(booking.name || "");
+  const [phone, setPhone] = useState(booking.phone || "");
+
+  function formatPhone(v) {
+    const d = v.replace(/\D/g,"").slice(0,11);
+    if (d.length <= 2) return d;
+    if (d.length <= 7) return `(${d.slice(0,2)}) ${d.slice(2)}`;
+    return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
+  }
+
+  function handleNext() {
+    if (name.trim().length < 2 || phone.replace(/\D/g,"").length < 10) return;
+    onChange({ name: name.trim(), phone: phone.replace(/\D/g,"") });
+    onNext();
+  }
+
+  return (
+    <div className="px-4">
+      <SectionTitle title="Seus Dados" subtitle="Quase pronto!" />
+      <div className="flex flex-col gap-4 mt-2">
+        <div>
+          <label className="text-stone-400 text-xs uppercase tracking-widest mb-2 block">Nome completo</label>
+          <div className="flex items-center gap-3 bg-stone-900 border-2 border-stone-800 focus-within:border-amber-400 rounded-2xl px-4 py-3 transition-colors">
+            <User size={18} className="text-stone-500" />
+            <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Seu nome" className="flex-1 bg-transparent text-white text-lg outline-none placeholder:text-stone-600" />
+          </div>
+        </div>
+        <div>
+          <label className="text-stone-400 text-xs uppercase tracking-widest mb-2 block">WhatsApp</label>
+          <div className="flex items-center gap-3 bg-stone-900 border-2 border-stone-800 focus-within:border-amber-400 rounded-2xl px-4 py-3 transition-colors">
+            <Phone size={18} className="text-stone-500" />
+            <input type="tel" value={phone} onChange={e => setPhone(formatPhone(e.target.value))} placeholder="(85) 99999-9999" className="flex-1 bg-transparent text-white text-lg outline-none placeholder:text-stone-600" />
+          </div>
+        </div>
+        <button onClick={handleNext} disabled={name.trim().length < 2 || phone.replace(/\D/g,"").length < 10} className="w-full bg-amber-400 disabled:bg-stone-800 disabled:text-stone-600 text-stone-950 font-black py-4 rounded-2xl text-lg mt-4 active:scale-95 transition-all">Continuar</button>
+      </div>
+    </div>
+  );
+}
+
+function StepConfirm({ booking, formatDate, onConfirm }) {
+  const [loading, setLoading] = useState(false);
+  async function handle() { setLoading(true); await onConfirm(); setLoading(false); }
+  const rows = [
+    { label: "Unidade", value: booking.unit?.name },
+    { label: "Serviço", value: booking.service?.name },
+    { label: "Barbeiro", value: booking.barber?.name },
+    { label: "Data", value: formatDate(booking.date) },
+    { label: "Horário", value: booking.time },
+    { label: "Nome", value: booking.name },
+    { label: "Valor", value: booking.service?.price ? `R$ ${Number(booking.service.price).toFixed(2).replace(".", ",")}` : "—" },
+  ];
+  return (
+    <div className="px-4">
+      <SectionTitle title="Confirmar" subtitle="Revise os dados" />
+      <div className="bg-stone-900 rounded-2xl border border-stone-800 overflow-hidden mb-6">
+        {rows.map((r, i) => (
+          <div key={r.label} className={`flex justify-between items-center px-4 py-3 ${i < rows.length - 1 ? "border-b border-stone-800" : ""}`}>
+            <span className="text-stone-400 text-sm">{r.label}</span>
+            <span className="text-white font-semibold text-sm text-right">{r.value || "—"}</span>
+          </div>
+        ))}
+      </div>
+      <button onClick={handle} disabled={loading} className="w-full bg-amber-400 text-stone-950 font-black py-5 rounded-2xl text-xl active:scale-95 transition-all disabled:opacity-70">
+        {loading ? "Agendando..." : "✅ Confirmar Agendamento"}
+      </button>
+    </div>
+  );
+}
+
+function StepSuccess({ booking, formatDate, onNew }) {
+  return (
+    <div className="px-4 flex flex-col items-center justify-center min-h-[70vh] text-center">
+      <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mb-6">
+        <CheckCircle size={48} className="text-green-400" />
+      </div>
+      <h2 className="text-white text-3xl font-black mb-2">Confirmado! 🔥</h2>
+      <p className="text-stone-400 mb-6">Agendamento realizado com sucesso</p>
+      <div className="bg-stone-900 rounded-2xl border border-stone-800 p-5 w-full mb-8 text-left">
+        <p className="text-white font-bold text-lg">{booking.service?.name}</p>
+        <p className="text-stone-300">{booking.barber?.name}</p>
+        <p className="text-amber-400 font-semibold mt-2">{formatDate(booking.date)} às {booking.time}</p>
+        <p className="text-stone-400 text-sm mt-1">{booking.unit?.name}</p>
+      </div>
+      <button onClick={onNew} className="w-full bg-amber-400 text-stone-950 font-black py-4 rounded-2xl text-lg active:scale-95 transition-all">Novo Agendamento</button>
+    </div>
+  );
+}
