@@ -237,8 +237,20 @@ function AppointmentCard({ a, getBarber, getService, getUnit, formatDate, upcomi
       </div>
       {unit && <p className="text-stone-500 text-xs flex items-center gap-1"><MapPin size={10} />{unit.name}</p>}
       {upcoming && (
-        <div className="mt-3 bg-amber-400/10 rounded-xl px-3 py-2">
-          <p className="text-amber-400 text-xs text-center font-semibold">✅ Agendamento confirmado</p>
+        <div className="mt-3 flex gap-2">
+          <div className="flex-1 bg-amber-400/10 rounded-xl px-3 py-2">
+            <p className="text-amber-400 text-xs text-center font-semibold">✅ Agendamento confirmado</p>
+          </div>
+          <button
+            onClick={async () => {
+              if (!confirm("Cancelar este agendamento?")) return;
+              await supabase.from("appointments").delete().eq("id", a.id);
+              alert("Agendamento cancelado!");
+              window.location.reload();
+            }}
+            className="bg-red-500/10 border border-red-500/30 text-red-400 px-3 py-2 rounded-xl text-xs font-bold">
+            Cancelar
+          </button>
         </div>
       )}
     </div>
