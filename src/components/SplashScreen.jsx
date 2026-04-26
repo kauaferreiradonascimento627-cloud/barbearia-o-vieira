@@ -9,7 +9,7 @@ export default function SplashScreen() {
       </div>
       
       <div className="text-center z-10 animate-fade-in">
-        <div className="w-56 h-56 mx-auto mb-6 animate-pulse-slow">
+        <div className="w-72 h-72 mx-auto mb-6 animate-pulse-slow">
           <img src="https://i.imgur.com/BnR11UJ.png" alt="Barbearia O Vieira" className="w-full h-full object-contain rounded-full" />
         </div>
         <p className="text-amber-400 text-sm tracking-[0.3em] uppercase">Agendamento Online</p>
