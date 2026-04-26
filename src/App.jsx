@@ -37,7 +37,7 @@ function AdminLogin({ onLogin, onBack }) {
   const [err, setErr] = useState(false);
 
   const handle = () => {
-    if (pwd === "admin123") { setErr(false); onLogin(); }
+    if (pwd === "1052paulo") { setErr(false); onLogin(); }
     else setErr(true);
   };
 
