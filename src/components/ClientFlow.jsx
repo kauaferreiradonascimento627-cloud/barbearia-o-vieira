@@ -505,20 +505,83 @@ function StepConfirm({ booking, formatDate, onConfirm }) {
 }
 
 function StepSuccess({ booking, formatDate, onNew }) {
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstall, setShowInstall] = useState(false);
+  const [installed, setInstalled] = useState(false);
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isInStandalone = window.matchMedia("(display-mode: standalone)").matches;
+
+  useEffect(() => {
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstall(true);
+    });
+  }, []);
+
+  async function installApp() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === "accepted") {
+      setShowInstall(false);
+      setInstalled(true);
+    }
+  }
+
   return (
     <div className="px-4 flex flex-col items-center justify-center min-h-[70vh] text-center">
-      <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mb-6">
-        <CheckCircle size={48} className="text-green-400" />
+      <img src="https://i.imgur.com/BnR11UJ.png" alt="Logo" className="w-24 h-24 rounded-full object-cover mb-4 shadow-lg shadow-amber-400/20" />
+      <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mb-4">
+        <CheckCircle size={36} className="text-green-400" />
       </div>
       <h2 className="text-white text-3xl font-black mb-2">Confirmado! 🔥</h2>
       <p className="text-stone-400 mb-6">Agendamento realizado com sucesso</p>
-      <div className="bg-stone-900 rounded-2xl border border-stone-800 p-5 w-full mb-8 text-left">
+
+      <div className="bg-stone-900 rounded-2xl border border-stone-800 p-5 w-full mb-4 text-left">
         <p className="text-white font-bold text-lg">{booking.service?.name}</p>
         <p className="text-stone-300">{booking.barber?.name}</p>
         <p className="text-amber-400 font-semibold mt-2">{formatDate(booking.date)} às {booking.time}</p>
         <p className="text-stone-400 text-sm mt-1">{booking.unit?.name}</p>
       </div>
-      <button onClick={onNew} className="w-full bg-amber-400 text-stone-950 font-black py-4 rounded-2xl text-lg active:scale-95 transition-all">Novo Agendamento</button>
+
+      {/* Android/Chrome */}
+      {showInstall && !isInStandalone && (
+        <button onClick={installApp}
+          className="w-full bg-amber-400/10 border border-amber-400/40 text-amber-400 font-bold py-4 rounded-2xl text-sm mb-3 flex items-center justify-center gap-2 active:scale-95 transition-all">
+          📲 Salvar app na tela inicial
+        </button>
+      )}
+
+      {/* iOS Safari */}
+      {isIOS && !isInStandalone && !showInstall && (
+        <div className="w-full bg-stone-800 border border-stone-700 rounded-2xl p-4 mb-3 text-left">
+          <p className="text-white font-bold text-sm mb-2">📲 Salvar app no iPhone</p>
+          <p className="text-stone-400 text-xs leading-relaxed">
+            Toque em <span className="text-amber-400 font-bold">compartilhar</span> (ícone 🔗 na barra do Safari) → depois toque em <span className="text-amber-400 font-bold">"Adicionar à Tela de Início"</span>
+          </p>
+        </div>
+      )}
+
+      {/* Chrome Android - instrução extra */}
+      {!isIOS && !showInstall && !isInStandalone && !installed && (
+        <div className="w-full bg-stone-800 border border-stone-700 rounded-2xl p-4 mb-3 text-left">
+          <p className="text-white font-bold text-sm mb-2">📲 Salvar app no celular</p>
+          <p className="text-stone-400 text-xs leading-relaxed">
+            Toque nos <span className="text-amber-400 font-bold">3 pontinhos</span> do navegador → depois toque em <span className="text-amber-400 font-bold">"Adicionar à tela inicial"</span>
+          </p>
+        </div>
+      )}
+
+      {installed && (
+        <div className="w-full bg-green-500/10 border border-green-500/30 rounded-2xl p-3 mb-3">
+          <p className="text-green-400 text-sm font-bold text-center">✅ App salvo na tela inicial!</p>
+        </div>
+      )}
+
+      <button onClick={onNew} className="w-full bg-amber-400 text-stone-950 font-black py-4 rounded-2xl text-lg active:scale-95 transition-all">
+        Novo Agendamento
+      </button>
     </div>
   );
 }
