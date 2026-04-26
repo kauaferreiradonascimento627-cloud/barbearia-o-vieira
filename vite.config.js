@@ -10,7 +10,7 @@ export default defineConfig({
       includeAssets: ['favicon.ico'],
       manifest: {
         name: 'Barbearia O Vieira',
-        short_name: 'O Vieira',
+        short_name: 'Barbearia O Vieira',
         description: 'Agende seu horário na Barbearia O Vieira',
         theme_color: '#0c0a09',
         background_color: '#0c0a09',
