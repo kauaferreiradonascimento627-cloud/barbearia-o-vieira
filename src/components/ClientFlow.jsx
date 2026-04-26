@@ -201,7 +201,7 @@ function StepTime({ booking, appointments, onSelect }) {
   const next14Days = Array.from({length: 14}, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() + i);
-    if (d.getDay() === 0) return null; // fecha domingo
+    if (d.getDay() === 0 || d.getDay() === 1) return null; // fecha domingo
     return d.toISOString().split("T")[0];
   }).filter(Boolean);
 
