@@ -11,8 +11,6 @@ const TABS = [
   { id: "clients", label: "Clientes", icon: Users },
 ];
 
-const DAYS_LABELS = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
-
 export default function AdminPanel({ onBack }) {
   const [tab, setTab] = useState("dashboard");
   const [data, setData] = useState({ units: [], services: [], barbers: [], appointments: [] });
@@ -227,7 +225,7 @@ function BarbersTab({ data, reload }) {
 
   return (
     <>
-      <CrudTable title="Barbeiros" items={data.barbers} onAdd={() => { setForm({work_days:"1,2,3,4,5,6", work_start:"09:00", work_end:"19:00"}); setModal("add"); }} onEdit={b => { setForm({...b}); setModal("edit"); }} onDelete={del}
+      <CrudTable title="Barbeiros" items={data.barbers} onAdd={() => { setForm({work_days:"1,2,3,4,5,6", work_start:"09:00", work_end:"19:00", lunch_start:"12:00", lunch_end:"14:00"}); setModal("add"); }} onEdit={b => { setForm({...b}); setModal("edit"); }} onDelete={del}
         renderItem={b => (
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full overflow-hidden bg-stone-800 flex-shrink-0">
@@ -236,16 +234,7 @@ function BarbersTab({ data, reload }) {
             <div>
               <p className="text-white font-bold">{b.name}</p>
               {b.specialty && <p className="text-stone-400 text-sm">{b.specialty}</p>}
-              {b.work_days && (
-                <div className="flex gap-1 mt-1">
-                  {[1,2,3,4,5,6,0].map(d => (
-                    <span key={d} className={`text-[10px] px-1 rounded ${b.work_days.split(",").map(Number).includes(d) ? "bg-amber-400/20 text-amber-400" : "text-stone-700"}`}>
-                      {["D","S","T","Q","Q","S","S"][d]}
-                    </span>
-                  ))}
-                </div>
-              )}
-              {b.work_start && <p className="text-stone-500 text-xs mt-1">{b.work_start} - {b.work_end}</p>}
+              {b.work_start && <p className="text-stone-500 text-xs mt-1">{b.work_start} - {b.work_end} {b.lunch_start ? `| Almoço: ${b.lunch_start}-${b.lunch_end}` : ""}</p>}
             </div>
           </div>
         )}
@@ -267,8 +256,9 @@ function BarbersTab({ data, reload }) {
           <p className="text-stone-500 text-xs mt-1">S=Seg T=Ter Q=Qua Q=Qui S=Sex S=Sáb D=Dom</p>
         </Field>
         <Field label="Início do Expediente"><Input type="time" value={form.work_start||"09:00"} onChange={e=>setForm({...form,work_start:e.target.value})} /></Field>
-        <Field label="Fim do Expediente"><Input type="time" value={form.work_end||"19:00"} onChange={e=>setForm({...form,work_end:e.target.value})} 
+        <Field label="Fim do Expediente"><Input type="time" value={form.work_end||"19:00"} onChange={e=>setForm({...form,work_end:e.target.value})} /></Field>
         <Field label="Início do Almoço"><Input type="time" value={form.lunch_start||"12:00"} onChange={e=>setForm({...form,lunch_start:e.target.value})} /></Field>
+        <Field label="Fim do Almoço"><Input type="time" value={form.lunch_end||"14:00"} onChange={e=>setForm({...form,lunch_end:e.target.value})} /></Field>
         <Field label="Avaliação"><Input type="number" min="0" max="5" step="0.1" value={form.rating||""} onChange={e=>setForm({...form,rating:e.target.value})} placeholder="4.9" /></Field>
       </Modal>}
     </>
