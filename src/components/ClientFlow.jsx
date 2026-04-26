@@ -360,18 +360,22 @@ function StepTime({ booking, appointments, onSelect }) {
   const workStart = barber?.work_start || "09:00";
   const workEnd = barber?.work_end || "19:00";
 
-  function generateTimes(start, end) {
+  function generateTimes(start, end, lunchStart, lunchEnd) {
     const times = [];
     let [sh, sm] = start.split(":").map(Number);
     const [eh, em] = end.split(":").map(Number);
+    const lsMin = lunchStart ? Number(lunchStart.split(":")[0])*60 + Number(lunchStart.split(":")[1]) : null;
+    const leMin = lunchEnd ? Number(lunchEnd.split(":")[0])*60 + Number(lunchEnd.split(":")[1]) : null;
     while (sh * 60 + sm < eh * 60 + em) {
-      times.push(`${String(sh).padStart(2,"0")}:${String(sm).padStart(2,"0")}`);
+      const cur = sh * 60 + sm;
+      if (!lsMin || cur < lsMin || cur >= leMin) {
+        times.push(`${String(sh).padStart(2,"0")}:${String(sm).padStart(2,"0")}`);
+      }
       sm += 30;
       if (sm >= 60) { sh++; sm -= 60; }
     }
     return times;
   }
-
   const next14Days = Array.from({length: 21}, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() + i);
