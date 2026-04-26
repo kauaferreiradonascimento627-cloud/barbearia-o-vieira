@@ -9,11 +9,10 @@ export default function SplashScreen() {
       </div>
       
       <div className="text-center z-10 animate-fade-in">
-        <div className="w-24 h-24 bg-amber-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-amber-400/30 animate-pulse-slow">
-          <span className="text-5xl">✂️</span>
+        <div className="w-40 h-40 mx-auto mb-6 animate-pulse-slow">
+          <img src="https://i.imgur.com/BnR11UJ.png" alt="Barbearia O Vieira" className="w-full h-full object-contain rounded-full" />
         </div>
-        <h1 className="text-white text-4xl font-black tracking-wider mb-2">O VIEIRA</h1>
-        <p className="text-amber-400 text-sm tracking-[0.3em] uppercase">Barbearia</p>
+        <p className="text-amber-400 text-sm tracking-[0.3em] uppercase">Agendamento Online</p>
         <div className="mt-8 flex gap-2 justify-center">
           <div className="w-2 h-2 bg-amber-400 rounded-full animate-bounce" style={{animationDelay:"0ms"}} />
           <div className="w-2 h-2 bg-amber-400 rounded-full animate-bounce" style={{animationDelay:"150ms"}} />
