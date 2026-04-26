@@ -386,7 +386,7 @@ function StepTime({ booking, appointments, onSelect }) {
 
   function selectDate(date) {
     setSelectedDate(date);
-    const allTimes = generateTimes(workStart, workEnd);
+  const allTimes = generateTimes(workStart, workEnd, barber?.lunch_start, barber?.lunch_end);
     const booked = appointments.filter(a => a.date === date && a.barber_id === barber?.id).map(a => a.time);
     setAvailableTimes(allTimes.filter(t => !booked.includes(t)));
   }
