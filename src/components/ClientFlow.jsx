@@ -202,7 +202,7 @@ function StepTime({ booking, appointments, onSelect }) {
     const d = new Date();
     d.setDate(d.getDate() + i);
     const dayOfWeek = d.getUTCDay();
-if (dayOfWeek === 0) return null; // fecha domingo
+    if (dayOfWeek === 0) return null; // fecha domingo
     return d.toISOString().split("T")[0];
   }).filter(Boolean);
 
