@@ -35,18 +35,20 @@ export default function ClientFlow({ onAdminClick }) {
 
   async function confirmBooking() {
     const { error } = await supabase.from("appointments").insert([{
-      unit_id: booking.unit.id, service_id: booking.service.id,
-      barber_id: booking.barber.id, date: booking.date, time: booking.time,
-      client_name: booking.name, client_phone: booking.phone,
+      unit_id: booking.unit.id,
+      service_id: booking.service.id,
+      barber_id: booking.barber.id,
+      date: booking.date,
+      time: booking.time,
+      client_name: booking.name,
+      client_phone: booking.phone,
     }]);
     if (error) { alert("Erro: " + error.message); return; }
-if (true) {
-      const msg = `Olá ${booking.name}! Seu horário foi confirmado na Barbearia O Vieira 🔥\n\n✂️ Serviço: ${booking.service.name}\n👤 Barbeiro: ${booking.barber.name}\n📅 Data: ${formatDate(booking.date)} às ${booking.time}\n📍 Unidade: ${booking.unit.name}`;
-      const link = `https://wa.me/55${booking.phone.replace(/\D/g,"")}?text=${encodeURIComponent(msg)}`;
-      window.open(link, "_blank");
-      await loadAll();
-      go("success");
-    }
+    const msg = `Olá ${booking.name}! Seu horário foi confirmado na Barbearia O Vieira 🔥\n\n✂️ Serviço: ${booking.service.name}\n👤 Barbeiro: ${booking.barber.name}\n📅 Data: ${formatDate(booking.date)} às ${booking.time}\n📍 Unidade: ${booking.unit.name}`;
+    const link = `https://wa.me/55${booking.phone.replace(/\D/g,"")}?text=${encodeURIComponent(msg)}`;
+    window.open(link, "_blank");
+    await loadAll();
+    go("success");
   }
 
   function formatDate(d) {
@@ -56,10 +58,15 @@ if (true) {
   }
 
   const stepIdx = STEPS.indexOf(step);
-  if (loading) return <div className="min-h-screen bg-stone-950 flex items-center justify-center"><div className="w-12 h-12 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" /></div>;
+  if (loading) return (
+    <div className="min-h-screen bg-stone-950 flex items-center justify-center">
+      <div className="w-12 h-12 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-stone-950 flex flex-col max-w-md mx-auto">
+      {/* Header */}
       <div className="sticky top-0 z-20 bg-stone-950/95 backdrop-blur-sm border-b border-stone-800 px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -68,9 +75,12 @@ if (true) {
                 <ChevronLeft size={22} />
               </button>
             )}
-            <div>
-              <h1 className="text-white font-black text-lg leading-none">O VIEIRA</h1>
-              <p className="text-amber-400 text-[10px] tracking-widest uppercase">Barbearia</p>
+            <div className="flex items-center gap-2">
+              <img src="https://i.imgur.com/BnR11UJ.png" alt="Logo" className="w-10 h-10 rounded-full object-cover" />
+              <div>
+                <h1 className="text-white font-black text-base leading-none">BARBEARIA O VIEIRA</h1>
+                <p className="text-amber-400 text-[10px] tracking-widest uppercase">Seg-Sáb 9h-19h</p>
+              </div>
             </div>
           </div>
           <button onClick={onAdminClick} className="text-stone-600 text-xs px-2 py-1">Admin</button>
@@ -148,9 +158,7 @@ function StepService({ services, booking, onSelect }) {
                   {s.duration && <p className="text-stone-400 text-sm flex items-center gap-1"><Clock size={12} />{s.duration} min</p>}
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-amber-400 font-black text-lg">{s.price ? `R$ ${Number(s.price).toFixed(2).replace(".", ",")}` : "—"}</p>
-              </div>
+              <p className="text-amber-400 font-black text-lg">{s.price ? `R$ ${Number(s.price).toFixed(2).replace(".", ",")}` : "—"}</p>
             </div>
           </button>
         ))}
@@ -188,8 +196,14 @@ function StepBarber({ barbers, booking, onSelect }) {
 function StepTime({ booking, appointments, onSelect }) {
   const [selectedDate, setSelectedDate] = useState("");
   const [availableTimes, setAvailableTimes] = useState([]);
-  const allTimes = ["08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00","18:30","19:00"];
-  const next14Days = Array.from({length: 14}, (_, i) => { const d = new Date(); d.setDate(d.getDate() + i); if (d.getDay() === 0) return null; return d.toISOString().split("T")[0]; }).filter(Boolean);
+  const allTimes = ["09:00","09:30","10:00","10:30","11:00","11:30","12:00","12:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00","18:30"];
+  
+  const next14Days = Array.from({length: 14}, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    if (d.getDay() === 0) return null; // fecha domingo
+    return d.toISOString().split("T")[0];
+  }).filter(Boolean);
 
   function selectDate(date) {
     setSelectedDate(date);
@@ -208,7 +222,7 @@ function StepTime({ booking, appointments, onSelect }) {
     <div>
       <SectionTitle title="Escolha o Horário" subtitle={`Barbeiro: ${booking.barber?.name}`} />
       <div className="px-4 mb-4">
-        <p className="text-stone-400 text-xs uppercase tracking-widest mb-3">Data</p>
+        <p className="text-stone-400 text-xs uppercase tracking-widest mb-3">Data — Seg à Sáb 9h-19h</p>
         <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
           {next14Days.map(d => {
             const lbl = formatDayLabel(d);
