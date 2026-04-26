@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
-import { MapPin, Clock, ChevronRight, ChevronLeft, User, Phone, CheckCircle, Scissors, Calendar, Star } from "lucide-react";
+import { MapPin, Clock, ChevronRight, ChevronLeft, User, Phone, CheckCircle, Scissors, Calendar, Star, Search } from "lucide-react";
 
 const STEPS = ["unit", "service", "barber", "time", "info", "confirm", "success"];
 
 export default function ClientFlow({ onAdminClick }) {
   const [step, setStep] = useState("unit");
+  const [screen, setScreen] = useState("home"); // home, booking, myappointments
   const [booking, setBooking] = useState({
     unit: null, service: null, barber: null,
     date: null, time: null, name: "", phone: ""
@@ -58,11 +59,16 @@ export default function ClientFlow({ onAdminClick }) {
   }
 
   const stepIdx = STEPS.indexOf(step);
+
   if (loading) return (
     <div className="min-h-screen bg-stone-950 flex items-center justify-center">
       <div className="w-12 h-12 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
     </div>
   );
+
+  if (screen === "myappointments") {
+    return <MyAppointments data={data} formatDate={formatDate} onBack={() => setScreen("home")} />;
+  }
 
   return (
     <div className="min-h-screen bg-stone-950 flex flex-col max-w-md mx-auto">
@@ -83,7 +89,12 @@ export default function ClientFlow({ onAdminClick }) {
               </div>
             </div>
           </div>
-          <button onClick={onAdminClick} className="text-stone-600 text-xs px-2 py-1">Admin</button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setScreen("myappointments")} className="text-stone-400 text-xs px-2 py-1 border border-stone-700 rounded-lg hover:border-amber-400 hover:text-amber-400 transition-colors">
+              Meus agend.
+            </button>
+            <button onClick={onAdminClick} className="text-stone-600 text-xs px-2 py-1">Admin</button>
+          </div>
         </div>
         {step !== "success" && (
           <div className="mt-3 flex gap-1">
@@ -103,6 +114,133 @@ export default function ClientFlow({ onAdminClick }) {
         {step === "confirm" && <StepConfirm booking={booking} formatDate={formatDate} onConfirm={confirmBooking} />}
         {step === "success" && <StepSuccess booking={booking} formatDate={formatDate} onNew={() => { setBooking({unit:null,service:null,barber:null,date:null,time:null,name:"",phone:""}); go("unit"); }} />}
       </div>
+    </div>
+  );
+}
+
+function MyAppointments({ data, formatDate, onBack }) {
+  const [phone, setPhone] = useState("");
+  const [searched, setSearched] = useState(false);
+  const [results, setResults] = useState([]);
+
+  function formatPhone(v) {
+    const d = v.replace(/\D/g,"").slice(0,11);
+    if (d.length <= 2) return d;
+    if (d.length <= 7) return `(${d.slice(0,2)}) ${d.slice(2)}`;
+    return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
+  }
+
+  function search() {
+    const cleaned = phone.replace(/\D/g,"");
+    const found = data.appointments
+      .filter(a => a.client_phone === cleaned)
+      .sort((a, b) => b.date?.localeCompare(a.date));
+    setResults(found);
+    setSearched(true);
+  }
+
+  function getBarber(id) { return data.barbers.find(b => b.id === id); }
+  function getService(id) { return data.services.find(s => s.id === id); }
+  function getUnit(id) { return data.units.find(u => u.id === id); }
+
+  const today = new Date().toISOString().split("T")[0];
+  const upcoming = results.filter(a => a.date >= today);
+  const past = results.filter(a => a.date < today);
+
+  return (
+    <div className="min-h-screen bg-stone-950 flex flex-col max-w-md mx-auto">
+      <div className="sticky top-0 z-20 bg-stone-950/95 backdrop-blur-sm border-b border-stone-800 px-4 py-3">
+        <div className="flex items-center gap-3">
+          <button onClick={onBack} className="w-8 h-8 flex items-center justify-center text-stone-400">
+            <ChevronLeft size={22} />
+          </button>
+          <div className="flex items-center gap-2">
+            <img src="https://i.imgur.com/BnR11UJ.png" alt="Logo" className="w-10 h-10 rounded-full object-cover" />
+            <div>
+              <h1 className="text-white font-black text-base leading-none">MEUS AGENDAMENTOS</h1>
+              <p className="text-amber-400 text-[10px] tracking-widest uppercase">Barbearia O Vieira</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4">
+        <p className="text-stone-400 text-sm mb-4">Digite seu WhatsApp para ver seus agendamentos</p>
+
+        <div className="flex gap-2 mb-6">
+          <div className="flex-1 flex items-center gap-3 bg-stone-900 border-2 border-stone-800 focus-within:border-amber-400 rounded-2xl px-4 py-3 transition-colors">
+            <Phone size={18} className="text-stone-500" />
+            <input
+              type="tel"
+              value={phone}
+              onChange={e => setPhone(formatPhone(e.target.value))}
+              placeholder="(85) 99999-9999"
+              className="flex-1 bg-transparent text-white text-lg outline-none placeholder:text-stone-600"
+            />
+          </div>
+          <button onClick={search} disabled={phone.replace(/\D/g,"").length < 10}
+            className="bg-amber-400 disabled:bg-stone-800 text-stone-950 disabled:text-stone-600 font-black px-4 rounded-2xl active:scale-95 transition-all">
+            <Search size={20} />
+          </button>
+        </div>
+
+        {searched && results.length === 0 && (
+          <div className="text-center py-12">
+            <Calendar size={40} className="text-stone-700 mx-auto mb-3" />
+            <p className="text-stone-500">Nenhum agendamento encontrado</p>
+            <p className="text-stone-600 text-sm mt-1">Verifique o número digitado</p>
+          </div>
+        )}
+
+        {upcoming.length > 0 && (
+          <div className="mb-6">
+            <p className="text-amber-400 text-xs uppercase tracking-widest mb-3 font-bold">Próximos</p>
+            <div className="flex flex-col gap-3">
+              {upcoming.map(a => (
+                <AppointmentCard key={a.id} a={a} getBarber={getBarber} getService={getService} getUnit={getUnit} formatDate={formatDate} upcoming={true} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {past.length > 0 && (
+          <div>
+            <p className="text-stone-500 text-xs uppercase tracking-widest mb-3 font-bold">Histórico</p>
+            <div className="flex flex-col gap-3">
+              {past.map(a => (
+                <AppointmentCard key={a.id} a={a} getBarber={getBarber} getService={getService} getUnit={getUnit} formatDate={formatDate} upcoming={false} />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AppointmentCard({ a, getBarber, getService, getUnit, formatDate, upcoming }) {
+  const barber = getBarber(a.barber_id);
+  const service = getService(a.service_id);
+  const unit = getUnit(a.unit_id);
+
+  return (
+    <div className={`bg-stone-900 rounded-2xl border p-4 ${upcoming ? "border-amber-400/30" : "border-stone-800"}`}>
+      <div className="flex items-start justify-between mb-2">
+        <div>
+          <p className="text-white font-bold text-lg">{service?.name || "Serviço"}</p>
+          <p className="text-stone-400 text-sm">{barber?.name || "Barbeiro"}</p>
+        </div>
+        <div className="text-right">
+          <p className={`font-black text-lg ${upcoming ? "text-amber-400" : "text-stone-500"}`}>{a.time}</p>
+          <p className={`text-sm ${upcoming ? "text-amber-400" : "text-stone-500"}`}>{formatDate(a.date)}</p>
+        </div>
+      </div>
+      {unit && <p className="text-stone-500 text-xs flex items-center gap-1"><MapPin size={10} />{unit.name}</p>}
+      {upcoming && (
+        <div className="mt-3 bg-amber-400/10 rounded-xl px-3 py-2">
+          <p className="text-amber-400 text-xs text-center font-semibold">✅ Agendamento confirmado</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -182,6 +320,14 @@ function StepBarber({ barbers, booking, onSelect }) {
               <div className="flex-1">
                 <h3 className="text-white font-bold text-lg">{b.name}</h3>
                 {b.specialty && <p className="text-stone-400 text-sm">{b.specialty}</p>}
+                {b.work_days && (
+                  <div className="flex gap-1 mt-1">
+                    {["D","S","T","Q","Q","S","S"].map((label, idx) => (
+                      <span key={idx} className={`text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold ${b.work_days.split(",").map(Number).includes(idx) ? "bg-amber-400/20 text-amber-400" : "text-stone-700"}`}>{label}</span>
+                    ))}
+                  </div>
+                )}
+                {b.work_start && <p className="text-stone-500 text-xs mt-1">{b.work_start} - {b.work_end}</p>}
                 {b.rating && <div className="flex items-center gap-1 mt-1"><Star size={12} className="text-amber-400 fill-amber-400" /><span className="text-amber-400 text-sm font-bold">{b.rating}</span></div>}
               </div>
               <ChevronRight size={20} className="text-stone-500" />
@@ -196,19 +342,36 @@ function StepBarber({ barbers, booking, onSelect }) {
 function StepTime({ booking, appointments, onSelect }) {
   const [selectedDate, setSelectedDate] = useState("");
   const [availableTimes, setAvailableTimes] = useState([]);
-  const allTimes = ["09:00","09:30","10:00","10:30","11:00","11:30","12:00","12:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00","18:30"];
-  
-  const next14Days = Array.from({length: 14}, (_, i) => {
+
+  const barber = booking.barber;
+  const workDays = barber?.work_days ? barber.work_days.split(",").map(Number) : [1,2,3,4,5,6];
+  const workStart = barber?.work_start || "09:00";
+  const workEnd = barber?.work_end || "19:00";
+
+  function generateTimes(start, end) {
+    const times = [];
+    let [sh, sm] = start.split(":").map(Number);
+    const [eh, em] = end.split(":").map(Number);
+    while (sh * 60 + sm < eh * 60 + em) {
+      times.push(`${String(sh).padStart(2,"0")}:${String(sm).padStart(2,"0")}`);
+      sm += 30;
+      if (sm >= 60) { sh++; sm -= 60; }
+    }
+    return times;
+  }
+
+  const next14Days = Array.from({length: 21}, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() + i);
     const dayOfWeek = d.getUTCDay();
-    if (dayOfWeek === 0) return null; // fecha domingo
+    if (!workDays.includes(dayOfWeek)) return null;
     return d.toISOString().split("T")[0];
-  }).filter(Boolean);
+  }).filter(Boolean).slice(0, 14);
 
   function selectDate(date) {
     setSelectedDate(date);
-    const booked = appointments.filter(a => a.date === date && a.barber_id === booking.barber?.id).map(a => a.time);
+    const allTimes = generateTimes(workStart, workEnd);
+    const booked = appointments.filter(a => a.date === date && a.barber_id === barber?.id).map(a => a.time);
     setAvailableTimes(allTimes.filter(t => !booked.includes(t)));
   }
 
@@ -221,9 +384,9 @@ function StepTime({ booking, appointments, onSelect }) {
 
   return (
     <div>
-      <SectionTitle title="Escolha o Horário" subtitle={`Barbeiro: ${booking.barber?.name}`} />
+      <SectionTitle title="Escolha o Horário" subtitle={`Barbeiro: ${barber?.name}`} />
       <div className="px-4 mb-4">
-        <p className="text-stone-400 text-xs uppercase tracking-widest mb-3">Data — Seg à Sáb 9h-19h</p>
+        <p className="text-stone-400 text-xs uppercase tracking-widest mb-3">Data disponível</p>
         <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
           {next14Days.map(d => {
             const lbl = formatDayLabel(d);
