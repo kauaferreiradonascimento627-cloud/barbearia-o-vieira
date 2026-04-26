@@ -11,6 +11,8 @@ const TABS = [
   { id: "clients", label: "Clientes", icon: Users },
 ];
 
+const DAYS_LABELS = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+
 export default function AdminPanel({ onBack }) {
   const [tab, setTab] = useState("dashboard");
   const [data, setData] = useState({ units: [], services: [], barbers: [], appointments: [] });
@@ -169,7 +171,7 @@ function UnitsTab({ data, reload }) {
       {modal && <Modal title={modal === "add" ? "Nova Unidade" : "Editar Unidade"} onClose={() => setModal(null)} onSave={save}>
         <Field label="Nome"><Input value={form.name||""} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Nome da unidade" /></Field>
         <Field label="Endereço"><Input value={form.address||""} onChange={e=>setForm({...form,address:e.target.value})} placeholder="Endereço" /></Field>
-        <Field label="Horário"><Input value={form.hours||""} onChange={e=>setForm({...form,hours:e.target.value})} placeholder="Seg-Sáb 8h-20h" /></Field>
+        <Field label="Horário"><Input value={form.hours||""} onChange={e=>setForm({...form,hours:e.target.value})} placeholder="Seg-Sáb 9h-19h" /></Field>
         <Field label="URL da Foto"><Input value={form.photo_url||""} onChange={e=>setForm({...form,photo_url:e.target.value})} placeholder="https://..." /></Field>
       </Modal>}
     </>
@@ -204,6 +206,13 @@ function ServicesTab({ data, reload }) {
 function BarbersTab({ data, reload }) {
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
+
+  function toggleDay(day) {
+    const days = (form.work_days || "1,2,3,4,5,6").split(",").map(Number);
+    const newDays = days.includes(day) ? days.filter(d => d !== day) : [...days, day].sort();
+    setForm({...form, work_days: newDays.join(",")});
+  }
+
   async function save() {
     if (modal === "add") await supabase.from("barbers").insert([form]);
     else await supabase.from("barbers").update(form).eq("id", form.id);
@@ -213,15 +222,53 @@ function BarbersTab({ data, reload }) {
     if (!confirm("Excluir este barbeiro?")) return;
     await supabase.from("barbers").delete().eq("id", id); reload();
   }
+
+  const activeDays = (form.work_days || "1,2,3,4,5,6").split(",").map(Number);
+
   return (
     <>
-      <CrudTable title="Barbeiros" items={data.barbers} onAdd={() => { setForm({}); setModal("add"); }} onEdit={b => { setForm({...b}); setModal("edit"); }} onDelete={del}
-        renderItem={b => <div className="flex items-center gap-3"><div className="w-12 h-12 rounded-full overflow-hidden bg-stone-800 flex-shrink-0">{b.photo_url ? <img src={b.photo_url} alt={b.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><User size={20} className="text-stone-500"/></div>}</div><div><p className="text-white font-bold">{b.name}</p>{b.specialty && <p className="text-stone-400 text-sm">{b.specialty}</p>}</div></div>} />
+      <CrudTable title="Barbeiros" items={data.barbers} onAdd={() => { setForm({work_days:"1,2,3,4,5,6", work_start:"09:00", work_end:"19:00"}); setModal("add"); }} onEdit={b => { setForm({...b}); setModal("edit"); }} onDelete={del}
+        renderItem={b => (
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full overflow-hidden bg-stone-800 flex-shrink-0">
+              {b.photo_url ? <img src={b.photo_url} alt={b.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><User size={20} className="text-stone-500"/></div>}
+            </div>
+            <div>
+              <p className="text-white font-bold">{b.name}</p>
+              {b.specialty && <p className="text-stone-400 text-sm">{b.specialty}</p>}
+              {b.work_days && (
+                <div className="flex gap-1 mt-1">
+                  {[1,2,3,4,5,6,0].map(d => (
+                    <span key={d} className={`text-[10px] px-1 rounded ${b.work_days.split(",").map(Number).includes(d) ? "bg-amber-400/20 text-amber-400" : "text-stone-700"}`}>
+                      {["D","S","T","Q","Q","S","S"][d]}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {b.work_start && <p className="text-stone-500 text-xs mt-1">{b.work_start} - {b.work_end}</p>}
+            </div>
+          </div>
+        )}
+      />
       {modal && <Modal title={modal === "add" ? "Novo Barbeiro" : "Editar Barbeiro"} onClose={() => setModal(null)} onSave={save}>
         <Field label="Nome"><Input value={form.name||""} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Nome do barbeiro" /></Field>
         <Field label="Especialidade"><Input value={form.specialty||""} onChange={e=>setForm({...form,specialty:e.target.value})} placeholder="Ex: Corte + Barba" /></Field>
         <Field label="Telefone"><Input value={form.phone||""} onChange={e=>setForm({...form,phone:e.target.value})} placeholder="(85) 99999-9999" /></Field>
         <Field label="URL da Foto"><Input value={form.photo_url||""} onChange={e=>setForm({...form,photo_url:e.target.value})} placeholder="https://..." /></Field>
+        <Field label="Dias de Trabalho">
+          <div className="flex gap-2 flex-wrap">
+            {[1,2,3,4,5,6,0].map(d => (
+              <button key={d} type="button" onClick={() => toggleDay(d)}
+                className={`w-10 h-10 rounded-xl font-bold text-sm transition-all ${activeDays.includes(d) ? "bg-amber-400 text-stone-950" : "bg-stone-800 text-stone-400"}`}>
+                {["D","S","T","Q","Q","S","S"][d]}
+              </button>
+            ))}
+          </div>
+          <p className="text-stone-500 text-xs mt-1">S=Seg T=Ter Q=Qua Q=Qui S=Sex S=Sáb D=Dom</p>
+        </Field>
+        <Field label="Início do Expediente"><Input type="time" value={form.work_start||"09:00"} onChange={e=>setForm({...form,work_start:e.target.value})} /></Field>
+        <Field label="Fim do Expediente"><Input type="time" value={form.work_end||"19:00"} onChange={e=>setForm({...form,work_end:e.target.value})} /></Field>
+        <Field label="Avaliação"><Input type="number" min="0" max="5" step="0.1" value={form.rating||""} onChange={e=>setForm({...form,rating:e.target.value})} placeholder="4.9" /></Field>
       </Modal>}
     </>
   );
