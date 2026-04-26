@@ -39,7 +39,8 @@ export default function ClientFlow({ onAdminClick }) {
       barber_id: booking.barber.id, date: booking.date, time: booking.time,
       client_name: booking.name, client_phone: booking.phone,
     }]);
-    if (!error) {
+    if (error) { alert("Erro: " + error.message); return; }
+if (true) {
       const msg = `Olá ${booking.name}! Seu horário foi confirmado na Barbearia O Vieira 🔥\n\n✂️ Serviço: ${booking.service.name}\n👤 Barbeiro: ${booking.barber.name}\n📅 Data: ${formatDate(booking.date)} às ${booking.time}\n📍 Unidade: ${booking.unit.name}`;
       const link = `https://wa.me/55${booking.phone.replace(/\D/g,"")}?text=${encodeURIComponent(msg)}`;
       window.open(link, "_blank");
