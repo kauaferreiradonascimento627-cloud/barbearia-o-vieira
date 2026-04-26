@@ -269,6 +269,8 @@ function BarbersTab({ data, reload }) {
         <Field label="Início do Expediente"><Input type="time" value={form.work_start||"09:00"} onChange={e=>setForm({...form,work_start:e.target.value})} /></Field>
         <Field label="Fim do Expediente"><Input type="time" value={form.work_end||"19:00"} onChange={e=>setForm({...form,work_end:e.target.value})} 
         <Field label="Início do Almoço"><Input type="time" value={form.lunch_start||"12:00"} onChange={e=>setForm({...form,lunch_start:e.target.value})} /></Field>
+<Field label="Fim do Almoço"><Input type="time" value={form.lunch_end||"14:00"} onChange={e=>setForm({...form,lunch_end:e.target.value})} /></Field>                                   
+        <Field label="Início do Almoço"><Input type="time" value={form.lunch_start||"12:00"} onChange={e=>setForm({...form,lunch_start:e.target.value})} /></Field>
 <Field label="Fim do Almoço"><Input type="time" value={form.lunch_end||"14:00"} onChange={e=>setForm({...form,lunch_end:e.target.value})} /></Field>/></Field>
         <Field label="Avaliação"><Input type="number" min="0" max="5" step="0.1" value={form.rating||""} onChange={e=>setForm({...form,rating:e.target.value})} placeholder="4.9" /></Field>
       </Modal>}
