@@ -197,7 +197,11 @@ function MyAppointments({ data, formatDate, onBack }) {
             <p className="text-amber-400 text-xs uppercase tracking-widest mb-3 font-bold">Próximos</p>
             <div className="flex flex-col gap-3">
               {upcoming.map(a => (
-             <AppointmentCard key={a.id} a={a} getBarber={getBarber} getService={getService} getUnit={getUnit} formatDate={formatDate} upcoming={true} onCancel={id => setResults(prev => prev.filter(r => r.id !== id))} />
+            <AppointmentCard key={a.id} a={a} getBarber={getBarber} getService={getService} getUnit={getUnit} formatDate={formatDate} upcoming={true} onCancel={async (id) => {
+  const cleaned = phone.replace(/\D/g,"");
+  const { data: fresh } = await supabase.from("appointments").select("*").eq("client_phone", cleaned);
+  setResults((fresh || []).sort((a,b) => b.date?.localeCompare(a.date)));
+}} />
               ))}
             </div>
           </div>
@@ -208,7 +212,11 @@ function MyAppointments({ data, formatDate, onBack }) {
             <p className="text-stone-500 text-xs uppercase tracking-widest mb-3 font-bold">Histórico</p>
             <div className="flex flex-col gap-3">
               {past.map(a => (
-                <AppointmentCard key={a.id} a={a} getBarber={getBarber} getService={getService} getUnit={getUnit} formatDate={formatDate} upcoming={false} onCancel={id => setResults(prev => prev.filter(r => r.id !== id))} />
+                <AppointmentCard key={a.id} a={a} getBarber={getBarber} getService={getService} getUnit={getUnit} formatDate={formatDate} upcoming={false} onCancel={async (id) => {
+  const cleaned = phone.replace(/\D/g,"");
+  const { data: fresh } = await supabase.from("appointments").select("*").eq("client_phone", cleaned);
+  setResults((fresh || []).sort((a,b) => b.date?.localeCompare(a.date)));
+}} />
               ))}
             </div>
           </div>
@@ -243,7 +251,8 @@ function AppointmentCard({ a, getBarber, getService, getUnit, formatDate, upcomi
           </div>
           <button
   onClick={async () => {
-    if (!confirm("Cancelar este agendamento?")) return;
+    const ok = window.confirm("Cancelar este agendamento?");
+if (!ok) return;
     await supabase.from("appointments").delete().eq("id", a.id);
     onCancel(a.id);
   }}
