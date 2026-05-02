@@ -130,13 +130,19 @@ function MyAppointments({ data, formatDate, onBack }) {
     return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
   }
 
-  function search() {
+  async function search() {
     const cleaned = phone.replace(/\D/g,"");
-    const found = data.appointments
+    const { data: fresh } = await supabase.from("appointments").select("*");
+    const found = (fresh || [])
       .filter(a => a.client_phone === cleaned)
       .sort((a, b) => b.date?.localeCompare(a.date));
     setResults(found);
     setSearched(true);
+  }
+
+  async function cancelAppointment(id) {
+    await supabase.from("appointments").delete().eq("id", id);
+    setResults(prev => prev.filter(r => r.id !== id));
   }
 
   function getBarber(id) { return data.barbers.find(b => b.id === id); }
@@ -197,11 +203,7 @@ function MyAppointments({ data, formatDate, onBack }) {
             <p className="text-amber-400 text-xs uppercase tracking-widest mb-3 font-bold">Próximos</p>
             <div className="flex flex-col gap-3">
               {upcoming.map(a => (
-            <AppointmentCard key={a.id} a={a} getBarber={getBarber} getService={getService} getUnit={getUnit} formatDate={formatDate} upcoming={true} onCancel={async (id) => {
-  const cleaned = phone.replace(/\D/g,"");
-  const { data: fresh } = await supabase.from("appointments").select("*").eq("client_phone", cleaned);
-  setResults((fresh || []).sort((a,b) => b.date?.localeCompare(a.date)));
-}} />
+                <AppointmentCard key={a.id} a={a} getBarber={getBarber} getService={getService} getUnit={getUnit} formatDate={formatDate} upcoming={true} onCancel={cancelAppointment} />
               ))}
             </div>
           </div>
@@ -212,11 +214,52 @@ function MyAppointments({ data, formatDate, onBack }) {
             <p className="text-stone-500 text-xs uppercase tracking-widest mb-3 font-bold">Histórico</p>
             <div className="flex flex-col gap-3">
               {past.map(a => (
-                <AppointmentCard key={a.id} a={a} getBarber={getBarber} getService={getService} getUnit={getUnit} formatDate={formatDate} upcoming={false} onCancel={async (id) => {
-  const cleaned = phone.replace(/\D/g,"");
-  const { data: fresh } = await supabase.from("appointments").select("*").eq("client_phone", cleaned);
-  setResults((fresh || []).sort((a,b) => b.date?.localeCompare(a.date)));
-}} />
+                <AppointmentCard key={a.id} a={a} getBarber={getBarber} getService={getService} getUnit={getUnit} formatDate={formatDate} upcoming={false} onCancel={cancelAppointment} />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AppointmentCard({ a, getBarber, getService, getUnit, formatDate, upcoming, onCancel }) {
+  const barber = getBarber(a.barber_id);
+  const service = getService(a.service_id);
+  const unit = getUnit(a.unit_id);
+
+  return (
+    <div className={`bg-stone-900 rounded-2xl border p-4 ${upcoming ? "border-amber-400/30" : "border-stone-800"}`}>
+      <div className="flex items-start justify-between mb-2">
+        <div>
+          <p className="text-white font-bold text-lg">{service?.name || "Serviço"}</p>
+          <p className="text-stone-400 text-sm">{barber?.name || "Barbeiro"}</p>
+        </div>
+        <div className="text-right">
+          <p className={`font-black text-lg ${upcoming ? "text-amber-400" : "text-stone-500"}`}>{a.time}</p>
+          <p className={`text-sm ${upcoming ? "text-amber-400" : "text-stone-500"}`}>{formatDate(a.date)}</p>
+        </div>
+      </div>
+      {unit && <p className="text-stone-500 text-xs flex items-center gap-1"><MapPin size={10} />{unit.name}</p>}
+      {upcoming && (
+        <div className="mt-3 flex gap-2">
+          <div className="flex-1 bg-amber-400/10 rounded-xl px-3 py-2">
+            <p className="text-amber-400 text-xs text-center font-semibold">✅ Confirmado</p>
+          </div>
+          <button
+            onClick={async () => {
+              if (!window.confirm("Cancelar este agendamento?")) return;
+              await onCancel(a.id);
+            }}
+            className="bg-red-500/10 border border-red-500/30 text-red-400 px-3 py-2 rounded-xl text-xs font-bold active:scale-95 transition-all">
+            Cancelar
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
               ))}
             </div>
           </div>
