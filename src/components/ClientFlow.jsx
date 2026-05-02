@@ -197,7 +197,7 @@ function MyAppointments({ data, formatDate, onBack }) {
             <p className="text-amber-400 text-xs uppercase tracking-widest mb-3 font-bold">Próximos</p>
             <div className="flex flex-col gap-3">
               {upcoming.map(a => (
-                <AppointmentCard key={a.id} a={a} getBarber={getBarber} getService={getService} getUnit={getUnit} formatDate={formatDate} upcoming={true} />
+             <AppointmentCard key={a.id} a={a} getBarber={getBarber} getService={getService} getUnit={getUnit} formatDate={formatDate} upcoming={true} onCancel={id => setResults(prev => prev.filter(r => r.id !== id))} />
               ))}
             </div>
           </div>
@@ -208,7 +208,7 @@ function MyAppointments({ data, formatDate, onBack }) {
             <p className="text-stone-500 text-xs uppercase tracking-widest mb-3 font-bold">Histórico</p>
             <div className="flex flex-col gap-3">
               {past.map(a => (
-                <AppointmentCard key={a.id} a={a} getBarber={getBarber} getService={getService} getUnit={getUnit} formatDate={formatDate} upcoming={false} />
+                <AppointmentCard key={a.id} a={a} getBarber={getBarber} getService={getService} getUnit={getUnit} formatDate={formatDate} upcoming={false} onCancel={id => setResults(prev => prev.filter(r => r.id !== id))} />
               ))}
             </div>
           </div>
@@ -218,7 +218,7 @@ function MyAppointments({ data, formatDate, onBack }) {
   );
 }
 
-function AppointmentCard({ a, getBarber, getService, getUnit, formatDate, upcoming }) {
+function AppointmentCard({ a, getBarber, getService, getUnit, formatDate, upcoming, onCancel }) {
   const barber = getBarber(a.barber_id);
   const service = getService(a.service_id);
   const unit = getUnit(a.unit_id);
@@ -242,14 +242,14 @@ function AppointmentCard({ a, getBarber, getService, getUnit, formatDate, upcomi
             <p className="text-amber-400 text-xs text-center font-semibold">✅ Agendamento confirmado</p>
           </div>
           <button
-            onClick={async () => {
-              if (!confirm("Cancelar este agendamento?")) return;
-              await supabase.from("appointments").delete().eq("id", a.id);
-            setResults(prev => prev.filter(r => r.id !== a.id));
-            className="bg-red-500/10 border border-red-500/30 text-red-400 px-3 py-2 rounded-xl text-xs font-bold">
-            Cancelar
-          </button>
-        </div>
+  onClick={async () => {
+    if (!confirm("Cancelar este agendamento?")) return;
+    await supabase.from("appointments").delete().eq("id", a.id);
+    onCancel(a.id);
+  }}
+  className="bg-red-500/10 border border-red-500/30 text-red-400 px-3 py-2 rounded-xl text-xs font-bold">
+  Cancelar
+</button>
       )}
     </div>
   );
