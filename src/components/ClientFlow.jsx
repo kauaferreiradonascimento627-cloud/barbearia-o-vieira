@@ -245,7 +245,7 @@ function AppointmentCard({ a, getBarber, getService, getUnit, formatDate, upcomi
             onClick={async () => {
               if (!confirm("Cancelar este agendamento?")) return;
               await supabase.from("appointments").delete().eq("id", a.id);
-             setResults(prev => prev.filter(r => r.id !== a.id));
+            setResults(prev => prev.filter(r => r.id !== a.id));
             className="bg-red-500/10 border border-red-500/30 text-red-400 px-3 py-2 rounded-xl text-xs font-bold">
             Cancelar
           </button>
