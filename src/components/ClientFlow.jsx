@@ -246,7 +246,7 @@ function AppointmentCard({ a, getBarber, getService, getUnit, formatDate, upcomi
               if (!confirm("Cancelar este agendamento?")) return;
               await supabase.from("appointments").delete().eq("id", a.id);
               alert("Agendamento cancelado!");
-              window.location.reload();
+              window.dispatchEvent(new Event("reload-appointments"));
             }}
             className="bg-red-500/10 border border-red-500/30 text-red-400 px-3 py-2 rounded-xl text-xs font-bold">
             Cancelar
