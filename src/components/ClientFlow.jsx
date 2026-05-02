@@ -6,7 +6,7 @@ const STEPS = ["unit", "service", "barber", "time", "info", "confirm", "success"
 
 export default function ClientFlow({ onAdminClick }) {
   const [step, setStep] = useState("unit");
-  const [screen, setScreen] = useState("home"); // home, booking, myappointments
+  const [screen, setScreen] = useState("booking");
   const [booking, setBooking] = useState({
     unit: null, service: null, barber: null,
     date: null, time: null, name: "", phone: ""
@@ -67,12 +67,11 @@ export default function ClientFlow({ onAdminClick }) {
   );
 
   if (screen === "myappointments") {
-    return <MyAppointments data={data} formatDate={formatDate} onBack={() => setScreen("home")} />;
+    return <MyAppointments data={data} formatDate={formatDate} onBack={() => setScreen("booking")} />;
   }
 
   return (
     <div className="min-h-screen bg-stone-950 flex flex-col max-w-md mx-auto">
-      {/* Header */}
       <div className="sticky top-0 z-20 bg-stone-950/95 backdrop-blur-sm border-b border-stone-800 px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -141,7 +140,11 @@ function MyAppointments({ data, formatDate, onBack }) {
   }
 
   async function cancelAppointment(id) {
-    await supabase.from("appointments").delete().eq("id", id);
+    const { error } = await supabase.from("appointments").delete().eq("id", id);
+    if (error) {
+      alert("Erro ao cancelar: " + error.message);
+      return;
+    }
     setResults(prev => prev.filter(r => r.id !== id));
   }
 
@@ -225,9 +228,17 @@ function MyAppointments({ data, formatDate, onBack }) {
 }
 
 function AppointmentCard({ a, getBarber, getService, getUnit, formatDate, upcoming, onCancel }) {
+  const [canceling, setCanceling] = useState(false);
   const barber = getBarber(a.barber_id);
   const service = getService(a.service_id);
   const unit = getUnit(a.unit_id);
+
+  async function handleCancel() {
+    if (!window.confirm("Cancelar este agendamento?")) return;
+    setCanceling(true);
+    await onCancel(a.id);
+    setCanceling(false);
+  }
 
   return (
     <div className={`bg-stone-900 rounded-2xl border p-4 ${upcoming ? "border-amber-400/30" : "border-stone-800"}`}>
@@ -247,63 +258,11 @@ function AppointmentCard({ a, getBarber, getService, getUnit, formatDate, upcomi
           <div className="flex-1 bg-amber-400/10 rounded-xl px-3 py-2">
             <p className="text-amber-400 text-xs text-center font-semibold">✅ Confirmado</p>
           </div>
-          <button
-            onClick={async () => {
-              if (!window.confirm("Cancelar este agendamento?")) return;
-              await supabase.from("appointments").delete().eq("id", a.id);
-alert("Agendamento cancelado!");
-window.location.reload();
-            }}
-            className="bg-red-500/10 border border-red-500/30 text-red-400 px-3 py-2 rounded-xl text-xs font-bold active:scale-95 transition-all">
-            Cancelar
+          <button onClick={handleCancel} disabled={canceling}
+            className="bg-red-500/10 border border-red-500/30 text-red-400 px-3 py-2 rounded-xl text-xs font-bold active:scale-95 transition-all disabled:opacity-50">
+            {canceling ? "..." : "Cancelar"}
           </button>
         </div>
-      )}
-    </div>
-  );
-}
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function AppointmentCard({ a, getBarber, getService, getUnit, formatDate, upcoming, onCancel }) {
-  const barber = getBarber(a.barber_id);
-  const service = getService(a.service_id);
-  const unit = getUnit(a.unit_id);
-
-  return (
-    <div className={`bg-stone-900 rounded-2xl border p-4 ${upcoming ? "border-amber-400/30" : "border-stone-800"}`}>
-      <div className="flex items-start justify-between mb-2">
-        <div>
-          <p className="text-white font-bold text-lg">{service?.name || "Serviço"}</p>
-          <p className="text-stone-400 text-sm">{barber?.name || "Barbeiro"}</p>
-        </div>
-        <div className="text-right">
-          <p className={`font-black text-lg ${upcoming ? "text-amber-400" : "text-stone-500"}`}>{a.time}</p>
-          <p className={`text-sm ${upcoming ? "text-amber-400" : "text-stone-500"}`}>{formatDate(a.date)}</p>
-        </div>
-      </div>
-      {unit && <p className="text-stone-500 text-xs flex items-center gap-1"><MapPin size={10} />{unit.name}</p>}
-      {upcoming && (
-        <div className="mt-3 flex gap-2">
-          <div className="flex-1 bg-amber-400/10 rounded-xl px-3 py-2">
-            <p className="text-amber-400 text-xs text-center font-semibold">✅ Agendamento confirmado</p>
-          </div>
-          <button
-  onClick={async () => {
-    const ok = window.confirm("Cancelar este agendamento?");
-if (!ok) return;
-    await supabase.from("appointments").delete().eq("id", a.id);
-    onCancel(a.id);
-  }}
-  className="bg-red-500/10 border border-red-500/30 text-red-400 px-3 py-2 rounded-xl text-xs font-bold">
-  Cancelar
-</button>
       )}
     </div>
   );
@@ -391,7 +350,6 @@ function StepBarber({ barbers, booking, onSelect }) {
                     ))}
                   </div>
                 )}
-                {b.work_start && <p className="text-stone-500 text-xs mt-1">{b.work_start} - {b.work_end}</p>}
                 {b.rating && <div className="flex items-center gap-1 mt-1"><Star size={12} className="text-amber-400 fill-amber-400" /><span className="text-amber-400 text-sm font-bold">{b.rating}</span></div>}
               </div>
               <ChevronRight size={20} className="text-stone-500" />
@@ -428,6 +386,7 @@ function StepTime({ booking, appointments, onSelect }) {
     }
     return times;
   }
+
   const next14Days = Array.from({length: 21}, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() + i);
@@ -438,7 +397,7 @@ function StepTime({ booking, appointments, onSelect }) {
 
   function selectDate(date) {
     setSelectedDate(date);
-  const allTimes = generateTimes(workStart, workEnd, barber?.lunch_start, barber?.lunch_end);
+    const allTimes = generateTimes(workStart, workEnd, barber?.lunch_start, barber?.lunch_end);
     const booked = appointments.filter(a => a.date === date && a.barber_id === barber?.id).map(a => a.time);
     setAvailableTimes(allTimes.filter(t => !booked.includes(t)));
   }
@@ -559,7 +518,6 @@ function StepConfirm({ booking, formatDate, onConfirm }) {
 function StepSuccess({ booking, formatDate, onNew }) {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstall, setShowInstall] = useState(false);
-  const [installed, setInstalled] = useState(false);
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
   const isInStandalone = window.matchMedia("(display-mode: standalone)").matches;
 
@@ -575,10 +533,7 @@ function StepSuccess({ booking, formatDate, onNew }) {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === "accepted") {
-      setShowInstall(false);
-      setInstalled(true);
-    }
+    if (outcome === "accepted") setShowInstall(false);
   }
 
   return (
@@ -589,48 +544,23 @@ function StepSuccess({ booking, formatDate, onNew }) {
       </div>
       <h2 className="text-white text-3xl font-black mb-2">Confirmado! 🔥</h2>
       <p className="text-stone-400 mb-6">Agendamento realizado com sucesso</p>
-
       <div className="bg-stone-900 rounded-2xl border border-stone-800 p-5 w-full mb-4 text-left">
         <p className="text-white font-bold text-lg">{booking.service?.name}</p>
         <p className="text-stone-300">{booking.barber?.name}</p>
         <p className="text-amber-400 font-semibold mt-2">{formatDate(booking.date)} às {booking.time}</p>
         <p className="text-stone-400 text-sm mt-1">{booking.unit?.name}</p>
       </div>
-
-      {/* Android/Chrome */}
       {showInstall && !isInStandalone && (
-        <button onClick={installApp}
-          className="w-full bg-amber-400/10 border border-amber-400/40 text-amber-400 font-bold py-4 rounded-2xl text-sm mb-3 flex items-center justify-center gap-2 active:scale-95 transition-all">
+        <button onClick={installApp} className="w-full bg-amber-400/10 border border-amber-400/40 text-amber-400 font-bold py-4 rounded-2xl text-sm mb-3 flex items-center justify-center gap-2 active:scale-95 transition-all">
           📲 Salvar app na tela inicial
         </button>
       )}
-
-      {/* iOS Safari */}
-      {isIOS && !isInStandalone && !showInstall && (
+      {isIOS && !isInStandalone && (
         <div className="w-full bg-stone-800 border border-stone-700 rounded-2xl p-4 mb-3 text-left">
           <p className="text-white font-bold text-sm mb-2">📲 Salvar app no iPhone</p>
-          <p className="text-stone-400 text-xs leading-relaxed">
-            Toque em <span className="text-amber-400 font-bold">compartilhar</span> (ícone 🔗 na barra do Safari) → depois toque em <span className="text-amber-400 font-bold">"Adicionar à Tela de Início"</span>
-          </p>
+          <p className="text-stone-400 text-xs leading-relaxed">Toque em <span className="text-amber-400 font-bold">compartilhar</span> 🔗 → <span className="text-amber-400 font-bold">"Adicionar à Tela de Início"</span></p>
         </div>
       )}
-
-      {/* Chrome Android - instrução extra */}
-      {!isIOS && !showInstall && !isInStandalone && !installed && (
-        <div className="w-full bg-stone-800 border border-stone-700 rounded-2xl p-4 mb-3 text-left">
-          <p className="text-white font-bold text-sm mb-2">📲 Salvar app no celular</p>
-          <p className="text-stone-400 text-xs leading-relaxed">
-            Toque nos <span className="text-amber-400 font-bold">3 pontinhos</span> do navegador → depois toque em <span className="text-amber-400 font-bold">"Adicionar à tela inicial"</span>
-          </p>
-        </div>
-      )}
-
-      {installed && (
-        <div className="w-full bg-green-500/10 border border-green-500/30 rounded-2xl p-3 mb-3">
-          <p className="text-green-400 text-sm font-bold text-center">✅ App salvo na tela inicial!</p>
-        </div>
-      )}
-
       <button onClick={onNew} className="w-full bg-amber-400 text-stone-950 font-black py-4 rounded-2xl text-lg active:scale-95 transition-all">
         Novo Agendamento
       </button>
