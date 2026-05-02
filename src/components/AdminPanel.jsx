@@ -46,9 +46,9 @@ export default function AdminPanel({ onBack }) {
           {TABS.map(t => {
             const Icon = t.icon;
             return (
-              <button key={t.id} onClick={() => setTab(t.id)} className={`flex-1 flex flex-col items-center py-2 gap-0.5 transition-colors ${tab === t.id ? "text-amber-400" : "text-stone-500"}`}>
-                <Icon size={18} />
-                <span className="text-[9px] leading-none">{t.label}</span>
+              <button key={t.id} onClick={() => setTab(t.id)} className={`flex-1 flex flex-col items-center py-4 gap-1 transition-colors ${tab === t.id ? "text-amber-400" : "text-stone-500"}`}>
+                <Icon size={22} />
+                <span className="text-xs leading-none">{t.label}</span>
               </button>
             );
           })}
